@@ -33,7 +33,7 @@ def get_balance_df():
     bucket = client.get_bucket('cooldowns2')
 
     # Get the zip file blob
-    blob = bucket.blob('wrseth_balances.zip')
+    blob = bucket.blob('ironclad_wrseth_balances.zip')
 
     # Download the contents of the zip file to a bytes buffer
     zip_buffer = io.BytesIO()
@@ -43,7 +43,7 @@ def get_balance_df():
     # Open the zip file
     with zipfile.ZipFile(zip_buffer) as zip_file:
         # Read the CSV file from within the zip
-        with zip_file.open('wrseth_balances.csv') as csv_file:
+        with zip_file.open('ironclad_wrseth_balances.csv') as csv_file:
             # Read the CSV into a pandas DataFrame
             df = pd.read_csv(csv_file)
 
@@ -75,10 +75,13 @@ def get_most_recent_block_balances(df, block_number, address_list=None):
 
 @app.route('/user_balances', methods=['GET'])
 def user_balances():
+
+    block_number = request.args.get('blockNumber', type=int)
+
     try:
         # Get the block_number from query parameters
         block_number = request.args.get('blockNumber', type=int)
-        
+
         # Get the list of addresses from query parameters
         addresses = request.args.get('addresses')
         if addresses:
