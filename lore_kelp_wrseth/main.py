@@ -14,6 +14,8 @@ import zipfile
 import datetime
 import csv
 from flask import Flask, jsonify, request
+from flask_caching import Cache
+import hashlib
 
 # logging.basicConfig(level=logging.DEBUG)
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -25,6 +27,13 @@ cors = CORS(app, origins='*')
 credentials, project = default()
 storage_client = storage.Client(credentials=credentials, project=project)
 
+# Add cache configuration
+cache = Cache(app, config={
+    'CACHE_TYPE': 'SimpleCache',  # In-memory cache
+    'CACHE_DEFAULT_TIMEOUT': 3600  # Cache timeout in seconds (1 Hour)
+})
+
+@cache.memoize(timeout=3600)
 def get_balance_df():
     # Initialize the Google Cloud Storage client
     client = storage.Client()
@@ -72,8 +81,18 @@ def get_most_recent_block_balances(df, block_number, address_list=None):
 
     return df
 
+# Create a cache key generator for the endpoint
+def make_cache_key():
+    # Get query parameters
+    block_number = request.args.get('blockNumber', '')
+    addresses = request.args.get('addresses', '')
+    # Create a unique key based on the parameters
+    key = f'user_balances_{block_number}_{addresses}'
+    return hashlib.md5(key.encode()).hexdigest()
+
 
 @app.route('/user_balances', methods=['GET'])
+@cache.cached(timeout=3600, key_fn=make_cache_key)
 def user_balances():
     try:
         # Get the block_number from query parameters

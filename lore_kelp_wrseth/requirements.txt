@@ -16,3 +16,4 @@ googleapis-common-protos
 flask
 web3
 flask-CORS
+flask_caching
